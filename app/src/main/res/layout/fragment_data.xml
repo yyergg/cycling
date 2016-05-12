@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+    <FrameLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:id="@+id/frameHeartRate"
+        android:layout_marginLeft="20px"
+        android:layout_marginRight="20px">
+
+        <ImageView
+            android:id="@+id/ivHeartRate"
+            android:layout_width= "fill_parent"
+            android:layout_height="fill_parent"
+            android:src="@drawable/heartrate"
+            />
+
+        <TextView
+            android:id="@+id/tvHeartRate"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:textSize="30sp"
+            android:layout_marginLeft="30px"
+            android:layout_marginTop="60px"
+            android:layout_marginRight="30px"
+            android:textColor="#FFFFFF"
+            android:textAlignment="center">
+            <requestFocus></requestFocus>
+        </TextView>
+    </FrameLayout>
+</LinearLayout>

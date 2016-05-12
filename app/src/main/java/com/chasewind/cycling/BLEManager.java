@@ -51,19 +51,16 @@ public class BLEManager {
     private Integer mConnectionState;
     private final Integer REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 10000;
-    private boolean mScanning;
-    private boolean mConnected;
-    private ArrayList mScannedDevices;
-    private ArrayList mConnectedDevices;
+    public boolean mScanning;
+    public boolean mConnected;
+    public ArrayList mScannedDevices;
+    public ArrayList mConnectedDevices;
 
-    private List<BluetoothGattService> mLeServices;
+    public List<BluetoothGattService> mLeServices;
 
     private BluetoothGattService mLeHeartRateService;
 
     private Handler mHandler;
-
-
-
 
     public BLEManager(Activity activity){
         mActivity = activity;
@@ -99,13 +96,11 @@ public class BLEManager {
         mBluetoothAdapter.startLeScan(mBLEScanCallback);
     }
 
-
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mBLEScanCallback =
         new BluetoothAdapter.LeScanCallback() {
             @Override
             public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-                Log.d("BLE", device.toString());
                 if(!mScannedDevices.contains(device)) {
                     mScannedDevices.add(device);
                 }

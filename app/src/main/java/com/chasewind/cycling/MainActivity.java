@@ -1,5 +1,6 @@
 package com.chasewind.cycling;
 
+import android.content.pm.ActivityInfo;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -27,16 +28,20 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager mViewPager;
 
     private FragmentConnect mFragmentConnect;
+    private FragmentData mFragmentData;
 
-    private BLEManager mBLEManager;
+    public BLEManager mBLEManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+//        setSupportActionBar(toolbar);
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -45,9 +50,10 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
-        mFragmentConnect = FragmentConnect.newInstance(1);
         mBLEManager = new BLEManager(this);
-        mBLEManager.scanBLEDevice();
+
+        mFragmentConnect = FragmentConnect.newInstance(1);
+        mFragmentData = FragmentData.newInstance(2);
     }
 
 
@@ -82,22 +88,21 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            return mFragmentConnect;
-//            switch (position) {
-//                case 0:
-//                    return mFragmentConnect;
-//                case 1:
-//                    return mFragmentConnect;
+            switch (position) {
+                case 0:
+                    return mFragmentConnect;
+                case 1:
+                    return mFragmentData;
 //                case 2:
 //                    return mFragmentConnect;
-//                default:
-//                    return mFragmentConnect;
-//            }
+                default:
+                    return mFragmentConnect;
+            }
         }
 
         @Override
         public int getCount() {
-            return 1;
+            return 2;
         }
 
         @Override
