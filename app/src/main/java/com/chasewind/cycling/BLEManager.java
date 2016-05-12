@@ -10,11 +10,15 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +27,21 @@ import java.util.List;
  */
 public class BLEManager {
     public static String HEART_RATE_MEASUREMENT = "00002a37";
+
+    private static final int STATE_DISCONNECTED = 0;
+    private static final int STATE_CONNECTING = 1;
+    private static final int STATE_CONNECTED = 2;
+
+    public final static String ACTION_GATT_CONNECTED =
+            "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
+    public final static String ACTION_GATT_DISCONNECTED =
+            "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
+    public final static String ACTION_GATT_SERVICES_DISCOVERED =
+            "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
+    public final static String ACTION_DATA_AVAILABLE =
+            "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
+    public final static String EXTRA_DATA =
+            "com.example.bluetooth.le.EXTRA_DATA";
 
     private Activity mActivity;
 
@@ -33,6 +52,7 @@ public class BLEManager {
     private final Integer REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 10000;
     private boolean mScanning;
+    private boolean mConnected;
     private ArrayList mScannedDevices;
     private ArrayList mConnectedDevices;
 
@@ -41,6 +61,9 @@ public class BLEManager {
     private BluetoothGattService mLeHeartRateService;
 
     private Handler mHandler;
+
+
+
 
     public BLEManager(Activity activity){
         mActivity = activity;
@@ -133,11 +156,14 @@ public class BLEManager {
                 mLeServices = mBluetoothGatt.getServices();
                 Integer i;
                 for(i=0;i<mLeServices.size();i++){
-                    if(()mLeServices.get(i).getUuid().toString().substring(0,8).equals("0000180d")) {
+                    if(((BluetoothGattService)mLeServices.get(i)).getUuid().toString().substring(0,8).equals("0000180d")) {
                         mLeHeartRateService = mLeServices.get(i);
                         break;
                     }
                 }
+
+                List<BluetoothGattCharacteristic> mLeCharacteristic;
+                BluetoothGattCharacteristic mLeHeartRateCharacteristic = null;
                 mLeCharacteristic = mLeHeartRateService.getCharacteristics();
                 for(i=0;i<mLeCharacteristic.size();i++){
                     if(mLeCharacteristic.get(i).getUuid().toString().substring(0,8).equals("00002a37")) {
@@ -184,4 +210,53 @@ public class BLEManager {
             Log.d("BLE", "onCharacteristicChanged");
         }
     };
+
+
+    private void broadcastUpdate(final String action) {
+        final Intent intent = new Intent(action);
+        mActivity.sendBroadcast(intent);
+    }
+
+    private void broadcastUpdate(final String action,
+                                 final BluetoothGattCharacteristic characteristic) {
+        final Intent intent = new Intent(action);
+
+        // This is special handling for the Heart Rate Measurement profile.
+        // Data parsing is carried out as per profile specifications:
+        // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
+        if (characteristic.getUuid().toString().substring(0,8).equals(HEART_RATE_MEASUREMENT)) {
+            int dataFlags = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+            int heartRateMeasurementValue = 0;
+            boolean heartRateValueFormat = false; // UINT8 or UINT16
+            boolean sensorContactSupportedStatus = false; // "not supported" or "supported"
+            boolean sensorContactDetectedStatus = false; // "not detected" or "detected"
+            boolean energyExpendedStatus = false; // "not present" or "not present"
+            boolean RrInterval = false; //"not present" or "one or more values are present. unit 1/1024s"
+            heartRateValueFormat = ((dataFlags & 1) != 0);
+            sensorContactSupportedStatus = ((dataFlags>>2 & 1) != 0);
+            sensorContactDetectedStatus = ((dataFlags>>1 & 1) != 0);
+            energyExpendedStatus = ((dataFlags>>3 & 1) != 0);
+            RrInterval = ((dataFlags>>4 & 1) != 0);
+
+            if (heartRateValueFormat) {
+                heartRateMeasurementValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 1);
+            } else {
+                heartRateMeasurementValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
+            }
+            final byte[] data = ByteBuffer.allocate(4).putInt(heartRateMeasurementValue).array();
+            Log.d("BLE", String.format("Received heart rate: %d", heartRateMeasurementValue));
+            intent.putExtra(ACTION_DATA_AVAILABLE,data);
+        } else {
+            // For all other profiles, writes the data formatted in HEX.
+            final byte[] data = characteristic.getValue();
+            if (data != null && data.length > 0) {
+                final StringBuilder stringBuilder = new StringBuilder(data.length);
+                for(byte byteChar : data)
+                    stringBuilder.append(String.format("%02X ", byteChar));
+                intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
+            }
+        }
+        mActivity.sendBroadcast(intent);
+    }
+
 }
