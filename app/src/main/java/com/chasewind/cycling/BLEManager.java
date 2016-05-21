@@ -28,6 +28,8 @@ import java.util.List;
 public class BLEManager {
     public static String HEART_RATE_MEASUREMENT = "00002a37";
 
+    public Integer HR_amount = 0;
+
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
@@ -47,7 +49,7 @@ public class BLEManager {
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothGatt mBluetoothGatt;
+    private BluetoothGatt mHRGatt;
     private Integer mConnectionState;
     private final Integer REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 10000;
@@ -55,6 +57,7 @@ public class BLEManager {
     public boolean mConnected;
     public ArrayList mScannedDevices;
     public ArrayList mConnectedDevices;
+    //public BluetoothDevice
 
     public List<BluetoothGattService> mLeServices;
 
@@ -107,7 +110,8 @@ public class BLEManager {
             }
         };
 
-    public boolean connect(BluetoothDevice device) {
+    public boolean connectHR(BluetoothDevice device) {
+        Log.d("BLE", "connectHR");
         if (mBluetoothAdapter == null) {
             Log.d("BLE", "BluetoothAdapter not initialized or unspecified address.");
             return false;
@@ -119,12 +123,12 @@ public class BLEManager {
         }
         // We want to directly connect to the device, so we are setting the autoConnect
         // parameter to false.
-        mBluetoothGatt = device.connectGatt(mActivity, false, mGattCallback);
+        mHRGatt = device.connectGatt(mActivity, false, mHRGattCallback);
         return true;
     }
 
     // connection change and services discovered.
-    private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
+    private final BluetoothGattCallback mHRGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             String intentAction;
@@ -132,11 +136,10 @@ public class BLEManager {
                 intentAction = ACTION_GATT_CONNECTED;
                 mConnectionState = STATE_CONNECTED;
                 broadcastUpdate(intentAction);
-                Log.d("BLE", "Connected to device.");
-                mBluetoothGatt.discoverServices();
+                Log.d("BLE", "Connected to HR.");
+                mHRGatt.discoverServices();
                 // Attempts to discover services after successful connection.
                 Log.i("BLE", "Attempting to start service discovery");
-
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 mConnectionState = STATE_DISCONNECTED;
@@ -148,7 +151,7 @@ public class BLEManager {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                mLeServices = mBluetoothGatt.getServices();
+                mLeServices = mHRGatt.getServices();
                 Integer i;
                 for(i=0;i<mLeServices.size();i++){
                     if(((BluetoothGattService)mLeServices.get(i)).getUuid().toString().substring(0,8).equals("0000180d")) {
@@ -177,9 +180,9 @@ public class BLEManager {
 
                 BluetoothGattDescriptor descriptor = mLeHeartRateCharacteristic.getDescriptor(mLeDescriptor.get(0).getUuid());
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                mBluetoothGatt.writeDescriptor(descriptor);
-                mBluetoothGatt.setCharacteristicNotification(mLeHeartRateCharacteristic, true);
-                if(!mBluetoothGatt.readCharacteristic(mLeHeartRateCharacteristic)){
+                mHRGatt.writeDescriptor(descriptor);
+                mHRGatt.setCharacteristicNotification(mLeHeartRateCharacteristic, true);
+                if(!mHRGatt.readCharacteristic(mLeHeartRateCharacteristic)){
                     Log.d("BLE","read");
                 }
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
@@ -240,6 +243,7 @@ public class BLEManager {
             }
             final byte[] data = ByteBuffer.allocate(4).putInt(heartRateMeasurementValue).array();
             Log.d("BLE", String.format("Received heart rate: %d", heartRateMeasurementValue));
+            HR_amount = heartRateMeasurementValue;
             intent.putExtra(ACTION_DATA_AVAILABLE,data);
         } else {
             // For all other profiles, writes the data formatted in HEX.

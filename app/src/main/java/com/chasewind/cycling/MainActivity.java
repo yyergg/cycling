@@ -11,6 +11,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,26 +37,38 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(APP_TAG,"onCreated");
         setContentView(R.layout.activity_main);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.container);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-
         mBLEManager = new BLEManager(this);
 
-        mFragmentConnect = FragmentConnect.newInstance(1);
-        mFragmentData = FragmentData.newInstance(2);
+        if (getSupportFragmentManager().findFragmentByTag(getFragmentTag(0)) != null) {
+            String tag_0 = getFragmentTag(0);
+            mFragmentConnect = (FragmentConnect) getSupportFragmentManager().findFragmentByTag(getFragmentTag(0));
+            mFragmentData = (FragmentData) getSupportFragmentManager().findFragmentByTag(getFragmentTag(1));
+            Log.d(APP_TAG, "get frag done");
+        } else {
+            mFragmentConnect = FragmentConnect.getInstance(1);
+            mFragmentData = FragmentData.getInstance(2);
+            Log.d(APP_TAG, "init frag done");
+        }
+
+
+
+        Log.d(APP_TAG, "before init adapter");
+        // Set up the ViewPager with the sections adapter.
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        mViewPager = (ViewPager) findViewById(R.id.container);
+        mViewPager.setAdapter(mSectionsPagerAdapter);
+        Log.d(APP_TAG, "init adapter done");
     }
 
+    private String getFragmentTag(int fragmentPosition)
+    {
+        return "android:switcher:" + Integer.toString(R.id.container) + ":" + fragmentPosition;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -88,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
+            Log.d(APP_TAG,"getitem");
+//            Thread.dumpStack();
             switch (position) {
                 case 0:
                     return mFragmentConnect;

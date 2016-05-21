@@ -8,28 +8,34 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FragmentConnect extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
+
+    private static FragmentConnect instance;
     private BLEManager mBLEManager;
     private ListView mLvHRList;
     private List mScannedDevices;
 
-    public static FragmentConnect newInstance(int sectionNumber) {
-        FragmentConnect fragment = new FragmentConnect();
+    public static FragmentConnect getInstance(int sectionNumber) {
+        Log.d("connect", "newInstance");
+        if(instance == null) {
+            instance = new FragmentConnect();
+        }
         Bundle args = new Bundle();
         args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-        fragment.setArguments(args);
-        return fragment;
+        instance.setArguments(args);
+        return instance;
     }
 
     public FragmentConnect() {
-
     }
 
     @Override
@@ -68,6 +74,16 @@ public class FragmentConnect extends Fragment {
                 R.layout.list_device,
                 scanning);
         this.mLvHRList.setAdapter(arrayAdapter);
+
+        mLvHRList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView parent, View view, int position,
+                                    long id) {
+                mBLEManager.connectHR((BluetoothDevice)mScannedDevices.get(position));
+
+            }
+        });
+
         return rootView;
     }
 
@@ -77,12 +93,13 @@ public class FragmentConnect extends Fragment {
         for(i=0;i<mScannedDevices.size();i++){
             devices.add(((BluetoothDevice)mScannedDevices.get(i)).getName()+"\n"+((BluetoothDevice)mScannedDevices.get(i)).getAddress());
         }
+        if(this.getActivity()!=null) {
+            ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
+                    this.getActivity(),
+                    R.layout.list_device,
+                    devices);
 
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
-                this.getActivity(),
-                R.layout.list_device,
-                devices);
-
-        this.mLvHRList.setAdapter(arrayAdapter);
+            this.mLvHRList.setAdapter(arrayAdapter);
+        }
     }
 }
