@@ -10,10 +10,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
@@ -27,8 +24,10 @@ import java.util.List;
  */
 public class BLEManager {
     public static String HEART_RATE_MEASUREMENT = "00002a37";
+    public static String CSC_MEASUREMENT = "00002a5b";
 
     public Integer HR_amount = 0;
+    public Integer RPM_amount = 0;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
@@ -50,6 +49,7 @@ public class BLEManager {
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt mHRGatt;
+    private BluetoothGatt mCSCGatt;
     private Integer mConnectionState;
     private final Integer REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 10000;
@@ -59,11 +59,19 @@ public class BLEManager {
     public ArrayList mConnectedDevices;
     //public BluetoothDevice
 
-    public List<BluetoothGattService> mLeServices;
+    public List<BluetoothGattService> mLeHRServices;
+    public List<BluetoothGattService> mLeCSCServices;
 
     private BluetoothGattService mLeHeartRateService;
+    private BluetoothGattService mLeCSCService;
 
     private Handler mHandler;
+
+    static private Integer oldLastWheelEventTime = 0;
+    static private Integer newLastWheelEventTime = 0;
+    static private Integer oldLastWheelEventCount = 0;
+    static private Integer newLastWheelEventCount = 0;
+
 
     public BLEManager(Activity activity){
         mActivity = activity;
@@ -127,6 +135,23 @@ public class BLEManager {
         return true;
     }
 
+    public boolean connectCSC(BluetoothDevice device) {
+        Log.d("BLE", "connectCSC");
+        if (mBluetoothAdapter == null) {
+            Log.d("BLE", "BluetoothAdapter not initialized or unspecified address.");
+            return false;
+        }
+
+        if (device == null) {
+            Log.d("BLE", "Device not found.  Unable to connect.");
+            return false;
+        }
+        // We want to directly connect to the device, so we are setting the autoConnect
+        // parameter to false.
+        mCSCGatt = device.connectGatt(mActivity, false, mCSCGattCallback);
+        return true;
+    }
+
     // connection change and services discovered.
     private final BluetoothGattCallback mHRGattCallback = new BluetoothGattCallback() {
         @Override
@@ -151,11 +176,11 @@ public class BLEManager {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                mLeServices = mHRGatt.getServices();
+                mLeHRServices = mHRGatt.getServices();
                 Integer i;
-                for(i=0;i<mLeServices.size();i++){
-                    if(((BluetoothGattService)mLeServices.get(i)).getUuid().toString().substring(0,8).equals("0000180d")) {
-                        mLeHeartRateService = mLeServices.get(i);
+                for(i=0; i< mLeHRServices.size(); i++){
+                    if(((BluetoothGattService) mLeHRServices.get(i)).getUuid().toString().substring(0,8).equals("0000180d")) {
+                        mLeHeartRateService = mLeHRServices.get(i);
                         break;
                     }
                 }
@@ -164,13 +189,12 @@ public class BLEManager {
                 BluetoothGattCharacteristic mLeHeartRateCharacteristic = null;
                 mLeCharacteristic = mLeHeartRateService.getCharacteristics();
                 for(i=0;i<mLeCharacteristic.size();i++){
-                    if(mLeCharacteristic.get(i).getUuid().toString().substring(0,8).equals("00002a37")) {
+                    if(mLeCharacteristic.get(i).getUuid().toString().substring(0,8).equals(HEART_RATE_MEASUREMENT)) {
                         mLeHeartRateCharacteristic = mLeCharacteristic.get(i);
                         break;
                     }
                 }
 
-                Log.d("BLE","***********"+mLeHeartRateCharacteristic.getUuid());
                 List<BluetoothGattDescriptor> mLeDescriptor;
                 mLeDescriptor = mLeHeartRateCharacteristic.getDescriptors();
 
@@ -209,6 +233,85 @@ public class BLEManager {
         }
     };
 
+    private final BluetoothGattCallback mCSCGattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            String intentAction;
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                intentAction = ACTION_GATT_CONNECTED;
+                mConnectionState = STATE_CONNECTED;
+                broadcastUpdate(intentAction);
+                Log.d("BLE", "Connected to CSC.");
+                mCSCGatt.discoverServices();
+                // Attempts to discover services after successful connection.
+                Log.i("BLE", "Attempting to start service discovery");
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                intentAction = ACTION_GATT_DISCONNECTED;
+                mConnectionState = STATE_DISCONNECTED;
+                Log.i("BLE", "Disconnected from GATT server.");
+                broadcastUpdate(intentAction);
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                mLeCSCServices = mCSCGatt.getServices();
+                Integer i;
+                for(i=0; i< mLeCSCServices.size(); i++){
+                    if(((BluetoothGattService) mLeCSCServices.get(i)).getUuid().toString().substring(0,8).equals("00001816")) {
+                        mLeCSCService = mLeCSCServices.get(i);
+                        break;
+                    }
+                }
+
+                List<BluetoothGattCharacteristic> mLeCharacteristic;
+                BluetoothGattCharacteristic mLeCSCCharacteristic = null;
+                mLeCharacteristic = mLeCSCService.getCharacteristics();
+                for(i=0;i<mLeCharacteristic.size();i++){
+                    if(mLeCharacteristic.get(i).getUuid().toString().substring(0,8).equals(CSC_MEASUREMENT)) {
+                        mLeCSCCharacteristic = mLeCharacteristic.get(i);
+                        break;
+                    }
+                }
+
+                List<BluetoothGattDescriptor> mLeDescriptor;
+                mLeDescriptor = mLeCSCCharacteristic.getDescriptors();
+
+                for(i=0;i<mLeDescriptor.size();i++){
+                    Log.d("BLE",mLeDescriptor.get(i).getUuid().toString());
+                }
+
+                BluetoothGattDescriptor descriptor = mLeCSCCharacteristic.getDescriptor(mLeDescriptor.get(0).getUuid());
+                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                mCSCGatt.writeDescriptor(descriptor);
+                mCSCGatt.setCharacteristicNotification(mLeCSCCharacteristic, true);
+                if(!mCSCGatt.readCharacteristic(mLeCSCCharacteristic)){
+                    Log.d("BLE","read");
+                }
+                broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
+            } else {
+                Log.w("BLE", "onServicesDiscovered received: " + status);
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt,
+                                         BluetoothGattCharacteristic characteristic,
+                                         int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+            }
+            Log.d("BLE", "onCharacteristicRead");
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt,
+                                            BluetoothGattCharacteristic characteristic) {
+            broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+            Log.d("BLE", "onCharacteristicChanged");
+        }
+    };
 
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
@@ -222,7 +325,7 @@ public class BLEManager {
         // This is special handling for the Heart Rate Measurement profile.
         // Data parsing is carried out as per profile specifications:
         // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
-        if (characteristic.getUuid().toString().substring(0,8).equals(HEART_RATE_MEASUREMENT)) {
+        if (characteristic.getUuid().toString().substring(0, 8).equals(HEART_RATE_MEASUREMENT)) {
             int dataFlags = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
             int heartRateMeasurementValue = 0;
             boolean heartRateValueFormat = false; // UINT8 or UINT16
@@ -231,10 +334,10 @@ public class BLEManager {
             boolean energyExpendedStatus = false; // "not present" or "not present"
             boolean RrInterval = false; //"not present" or "one or more values are present. unit 1/1024s"
             heartRateValueFormat = ((dataFlags & 1) != 0);
-            sensorContactSupportedStatus = ((dataFlags>>2 & 1) != 0);
-            sensorContactDetectedStatus = ((dataFlags>>1 & 1) != 0);
-            energyExpendedStatus = ((dataFlags>>3 & 1) != 0);
-            RrInterval = ((dataFlags>>4 & 1) != 0);
+            sensorContactSupportedStatus = ((dataFlags >> 2 & 1) != 0);
+            sensorContactDetectedStatus = ((dataFlags >> 1 & 1) != 0);
+            energyExpendedStatus = ((dataFlags >> 3 & 1) != 0);
+            RrInterval = ((dataFlags >> 4 & 1) != 0);
 
             if (heartRateValueFormat) {
                 heartRateMeasurementValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 1);
@@ -242,9 +345,34 @@ public class BLEManager {
                 heartRateMeasurementValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
             }
             final byte[] data = ByteBuffer.allocate(4).putInt(heartRateMeasurementValue).array();
-            Log.d("BLE", String.format("Received heart rate: %d", heartRateMeasurementValue));
+            //Log.d("BLE", String.format("Received heart rate: %d", heartRateMeasurementValue));
             HR_amount = heartRateMeasurementValue;
-            intent.putExtra(ACTION_DATA_AVAILABLE,data);
+            intent.putExtra(ACTION_DATA_AVAILABLE, data);
+        } else if (characteristic.getUuid().toString().substring(0, 8).equals(CSC_MEASUREMENT)){
+            byte[] data = characteristic.getValue();
+            boolean wheelFlag = (data[0] & 1) != 0;
+            boolean crankFlag = (data[0]>>1 & 1) != 0;
+            Integer cumulativeWheelRevolutions = (data[4]<<24)&0xff000000|
+                    (data[3]<<16)&0x00ff0000|
+                    (data[2]<< 8)&0x0000ff00|
+                    (data[1]<< 0)&0x000000ff;
+            Integer lastWheelEventTime = (data[6]<< 8)&0x0000ff00|
+                    (data[5]<< 0)&0x000000ff;
+            oldLastWheelEventTime = newLastWheelEventTime;
+            oldLastWheelEventCount = newLastWheelEventCount;
+            newLastWheelEventTime = lastWheelEventTime;
+            newLastWheelEventCount = cumulativeWheelRevolutions;
+            if (newLastWheelEventTime - oldLastWheelEventTime < 0){
+                newLastWheelEventTime = newLastWheelEventTime + 65536;
+            }
+            if(newLastWheelEventTime.equals(oldLastWheelEventTime)) {
+                RPM_amount = 0;
+            }
+            else {
+                RPM_amount = (newLastWheelEventCount - oldLastWheelEventCount) * 60 * 1024 / (newLastWheelEventTime - oldLastWheelEventTime);
+            }
+            Log.d("rpm",RPM_amount.toString());
+
         } else {
             // For all other profiles, writes the data formatted in HEX.
             final byte[] data = characteristic.getValue();

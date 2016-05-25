@@ -11,23 +11,22 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FragmentConnect extends Fragment {
+public class FragmentConnectCSC extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
 
-    private static FragmentConnect instance;
+    private static FragmentConnectCSC instance;
     private BLEManager mBLEManager;
-    private ListView mLvHRList;
+    private ListView mLvCSCList;
     private List mScannedDevices;
 
-    public static FragmentConnect getInstance(int sectionNumber) {
+    public static FragmentConnectCSC getInstance(int sectionNumber) {
         Log.d("connect", "newInstance");
         if(instance == null) {
-            instance = new FragmentConnect();
+            instance = new FragmentConnectCSC();
         }
         Bundle args = new Bundle();
         args.putInt(ARG_SECTION_NUMBER, sectionNumber);
@@ -35,15 +34,15 @@ public class FragmentConnect extends Fragment {
         return instance;
     }
 
-    public FragmentConnect() {
+    public FragmentConnectCSC() {
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_connect, container, false);
-        this.mLvHRList = (ListView) rootView.findViewById(R.id.lvHRList);
-        Log.d("connect",this.mLvHRList.toString());
+        View rootView = inflater.inflate(R.layout.fragment_connect_csc, container, false);
+        this.mLvCSCList = (ListView) rootView.findViewById(R.id.lvCSCList);
+        Log.d("connect",this.mLvCSCList.toString());
         this.mBLEManager = ((MainActivity)this.getActivity()).mBLEManager;
 
         mBLEManager.scanBLEDevice();
@@ -73,13 +72,13 @@ public class FragmentConnect extends Fragment {
                 this.getActivity(),
                 R.layout.list_device,
                 scanning);
-        this.mLvHRList.setAdapter(arrayAdapter);
+        this.mLvCSCList.setAdapter(arrayAdapter);
 
-        mLvHRList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mLvCSCList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView parent, View view, int position,
                                     long id) {
-                mBLEManager.connectHR((BluetoothDevice)mScannedDevices.get(position));
+                mBLEManager.connectCSC((BluetoothDevice)mScannedDevices.get(position));
 
             }
         });
@@ -99,7 +98,7 @@ public class FragmentConnect extends Fragment {
                     R.layout.list_device,
                     devices);
 
-            this.mLvHRList.setAdapter(arrayAdapter);
+            this.mLvCSCList.setAdapter(arrayAdapter);
         }
     }
 }

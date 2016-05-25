@@ -17,6 +17,7 @@ public class FragmentData extends Fragment {
     private BLEManager mBLEManager;
     private static FragmentData instance;
     private TextView tvHeartRate;
+    private TextView tvRPM;
 
     public static FragmentData getInstance(int sectionNumber) {
         if(instance == null) {
@@ -38,6 +39,7 @@ public class FragmentData extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_data, container, false);
         this.mBLEManager = ((MainActivity)this.getActivity()).mBLEManager;
         this.tvHeartRate = (TextView)rootView.findViewById(R.id.tvHeartRate);
+        this.tvRPM = (TextView)rootView.findViewById(R.id.tvRPM);
         final Handler handler = new Handler();
         Thread thread = new Thread() {
             @Override
@@ -49,6 +51,7 @@ public class FragmentData extends Fragment {
                             public void run() {
                                 Log.d("data", mBLEManager.HR_amount.toString());
                                 printHR(mBLEManager.HR_amount);
+                                printRPM(mBLEManager.RPM_amount);
                             }
                         });
                     }
@@ -66,6 +69,13 @@ public class FragmentData extends Fragment {
             tvHeartRate.setText("---");
         } else {
             tvHeartRate.setText(HR_amount.toString());
+        }
+    }
+    private void printRPM(Integer RPM_amount){
+        if(RPM_amount == null || RPM_amount==0 ){
+            tvRPM.setText("---");
+        } else {
+            tvRPM.setText(RPM_amount.toString());
         }
     }
 }

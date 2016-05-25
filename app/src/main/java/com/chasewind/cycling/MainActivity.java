@@ -1,10 +1,7 @@
 package com.chasewind.cycling;
 
 import android.content.pm.ActivityInfo;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -12,13 +9,8 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-
-import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,7 +20,8 @@ public class MainActivity extends AppCompatActivity {
 
     private ViewPager mViewPager;
 
-    private FragmentConnect mFragmentConnect;
+    private FragmentConnectHR mFragmentConnectHR;
+    private FragmentConnectCSC mFragmentConnectCSC;
     private FragmentData mFragmentData;
 
     public BLEManager mBLEManager;
@@ -45,13 +38,14 @@ public class MainActivity extends AppCompatActivity {
         mBLEManager = new BLEManager(this);
 
         if (getSupportFragmentManager().findFragmentByTag(getFragmentTag(0)) != null) {
-            String tag_0 = getFragmentTag(0);
-            mFragmentConnect = (FragmentConnect) getSupportFragmentManager().findFragmentByTag(getFragmentTag(0));
-            mFragmentData = (FragmentData) getSupportFragmentManager().findFragmentByTag(getFragmentTag(1));
+            mFragmentConnectHR = (FragmentConnectHR) getSupportFragmentManager().findFragmentByTag(getFragmentTag(0));
+            mFragmentConnectCSC = (FragmentConnectCSC) getSupportFragmentManager().findFragmentByTag(getFragmentTag(1));
+            mFragmentData = (FragmentData) getSupportFragmentManager().findFragmentByTag(getFragmentTag(2));
             Log.d(APP_TAG, "get frag done");
         } else {
-            mFragmentConnect = FragmentConnect.getInstance(1);
-            mFragmentData = FragmentData.getInstance(2);
+            mFragmentConnectHR = FragmentConnectHR.getInstance(1);
+            mFragmentConnectCSC = FragmentConnectCSC.getInstance(2);
+            mFragmentData = FragmentData.getInstance(3);
             Log.d(APP_TAG, "init frag done");
         }
 
@@ -102,22 +96,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
             Log.d(APP_TAG,"getitem");
-//            Thread.dumpStack();
             switch (position) {
                 case 0:
-                    return mFragmentConnect;
+                    return mFragmentConnectHR;
                 case 1:
+                    return mFragmentConnectCSC;
+                case 2:
                     return mFragmentData;
-//                case 2:
-//                    return mFragmentConnect;
                 default:
-                    return mFragmentConnect;
+                    return mFragmentConnectHR;
             }
         }
 
         @Override
         public int getCount() {
-            return 2;
+            return 3;
         }
 
         @Override
