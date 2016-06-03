@@ -10,7 +10,8 @@
         android:layout_height="300dp"
         android:id="@+id/frameHeartRate"
         android:layout_marginLeft="20px"
-        android:layout_marginRight="20px">
+        android:layout_marginRight="20px"
+        android:keepScreenOn="true">
 
         <ImageView
             android:id="@+id/ivHeartRate"

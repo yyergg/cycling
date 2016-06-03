@@ -9,6 +9,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.util.EntityUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by yyerg on 2016/5/13.
  */
@@ -61,6 +77,9 @@ public class FragmentData extends Fragment {
             }
         };
         thread.start();
+        ScheduledExecutorService scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+        final ScheduledFuture httpHandle =
+                scheduleTaskExecutor.scheduleAtFixedRate(httpThread, 5, 5, TimeUnit.SECONDS);
         return rootView;
     }
 
@@ -76,6 +95,45 @@ public class FragmentData extends Fragment {
             tvRPM.setText("---");
         } else {
             tvRPM.setText(RPM_amount.toString());
+        }
+    }
+
+    private Runnable httpThread = new Runnable() {
+        public void run() {
+            sendPostDataToInternet();
+        }
+    };
+
+    private void sendPostDataToInternet() {
+        HttpPost httpRequest = new HttpPost("http://chasewind.co/yyergg/android.php");
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        try {
+            params.add(new BasicNameValuePair("username", "Willian Su"));
+            params.add(new BasicNameValuePair("type", "heartrate"));
+            params.add(new BasicNameValuePair("value", mBLEManager.HR_amount.toString()));
+            httpRequest.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
+            HttpResponse httpResponse = new DefaultHttpClient().execute(httpRequest);
+            if (httpResponse.getStatusLine().getStatusCode() == 200) {
+                String strResult = EntityUtils.toString(httpResponse.getEntity());
+                Log.d("SQL",strResult);
+            }
+        }catch(Exception e){
+            Log.d("SQL",e.toString());
+        }
+        HttpPost httpRequest2 = new HttpPost("http://chasewind.co/yyergg/android.php");
+        List<NameValuePair> params2 = new ArrayList<NameValuePair>();
+        try {
+            params2.add(new BasicNameValuePair("username", "Willian Su"));
+            params2.add(new BasicNameValuePair("type", "RPM"));
+            params2.add(new BasicNameValuePair("value", mBLEManager.RPM_amount.toString()));
+            httpRequest.setEntity(new UrlEncodedFormEntity(params2, HTTP.UTF_8));
+            HttpResponse httpResponse = new DefaultHttpClient().execute(httpRequest);
+            if (httpResponse.getStatusLine().getStatusCode() == 200) {
+                String strResult = EntityUtils.toString(httpResponse.getEntity());
+                Log.d("SQL",strResult);
+            }
+        }catch(Exception e){
+            Log.d("SQL",e.toString());
         }
     }
 }
