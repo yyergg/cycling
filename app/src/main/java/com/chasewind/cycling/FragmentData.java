@@ -105,10 +105,10 @@ public class FragmentData extends Fragment {
     };
 
     private void sendPostDataToInternet() {
-        HttpPost httpRequest = new HttpPost("http://chasewind.co/yyergg/android.php");
+        HttpPost httpRequest = new HttpPost("http://52.196.218.0/chasewind_web/android.php");
         List<NameValuePair> params = new ArrayList<NameValuePair>();
         try {
-            params.add(new BasicNameValuePair("username", "Willian Su"));
+            params.add(new BasicNameValuePair("username", "William Su"));
             params.add(new BasicNameValuePair("type", "heartrate"));
             params.add(new BasicNameValuePair("value", mBLEManager.HR_amount.toString()));
             httpRequest.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
@@ -120,10 +120,10 @@ public class FragmentData extends Fragment {
         }catch(Exception e){
             Log.d("SQL",e.toString());
         }
-        HttpPost httpRequest2 = new HttpPost("http://chasewind.co/yyergg/android.php");
+        HttpPost httpRequest2 = new HttpPost("http://52.196.218.0/chasewind_web/android.php");
         List<NameValuePair> params2 = new ArrayList<NameValuePair>();
         try {
-            params2.add(new BasicNameValuePair("username", "Willian Su"));
+            params2.add(new BasicNameValuePair("username", "William Su"));
             params2.add(new BasicNameValuePair("type", "RPM"));
             params2.add(new BasicNameValuePair("value", mBLEManager.RPM_amount.toString()));
             httpRequest.setEntity(new UrlEncodedFormEntity(params2, HTTP.UTF_8));
