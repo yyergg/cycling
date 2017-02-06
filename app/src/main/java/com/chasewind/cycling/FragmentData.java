@@ -11,12 +11,16 @@ import android.widget.TextView;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +69,7 @@ public class FragmentData extends Fragment {
                         sleep(1000);
                         handler.post(new Runnable() {
                             public void run() {
-                                Log.d("data", mBLEManager.HR_amount.toString());
+                                Log.d("data", mBLEManager.RPM_amount.toString());
                                 printHR(mBLEManager.HR_amount);
                                 printRPM(mBLEManager.RPM_amount);
                             }
@@ -105,35 +109,78 @@ public class FragmentData extends Fragment {
     };
 
     private void sendPostDataToInternet() {
-        HttpPost httpRequest = new HttpPost("http://52.196.218.0/chasewind_web/android.php");
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
+
+        HttpPost httpRequest = new HttpPost("https://api.yyergg.info/sensor/");
+        JSONObject json_hr = new JSONObject();
         try {
-            params.add(new BasicNameValuePair("username", "William Su"));
-            params.add(new BasicNameValuePair("type", "heartrate"));
-            params.add(new BasicNameValuePair("value", mBLEManager.HR_amount.toString()));
-            httpRequest.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
-            HttpResponse httpResponse = new DefaultHttpClient().execute(httpRequest);
-            if (httpResponse.getStatusLine().getStatusCode() == 200) {
-                String strResult = EntityUtils.toString(httpResponse.getEntity());
-                Log.d("SQL",strResult);
-            }
-        }catch(Exception e){
-            Log.d("SQL",e.toString());
+            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpPost httpost = new HttpPost("https://api.yyergg.info/sensor/");
+            json_hr.put("user_name", "William Su");
+            json_hr.put("type", "heartrate");
+            json_hr.put("value", mBLEManager.HR_amount.toString());
+            StringEntity se = new StringEntity(json_hr.toString());
+            httpost.setEntity(se);
+            //sets a request header so the page receving the request
+            //will know what to do with it
+            httpost.setHeader("Accept", "application/json");
+            httpost.setHeader("Content-type", "application/json");
+            ResponseHandler responseHandler = new BasicResponseHandler();
+            httpclient.execute(httpost, responseHandler);
+        } catch(Exception e){
+            Log.d("json",e.toString());
         }
-        HttpPost httpRequest2 = new HttpPost("http://52.196.218.0/chasewind_web/android.php");
-        List<NameValuePair> params2 = new ArrayList<NameValuePair>();
+
+        JSONObject json_csc = new JSONObject();
         try {
-            params2.add(new BasicNameValuePair("username", "William Su"));
-            params2.add(new BasicNameValuePair("type", "RPM"));
-            params2.add(new BasicNameValuePair("value", mBLEManager.RPM_amount.toString()));
-            httpRequest.setEntity(new UrlEncodedFormEntity(params2, HTTP.UTF_8));
-            HttpResponse httpResponse = new DefaultHttpClient().execute(httpRequest);
-            if (httpResponse.getStatusLine().getStatusCode() == 200) {
-                String strResult = EntityUtils.toString(httpResponse.getEntity());
-                Log.d("SQL",strResult);
-            }
-        }catch(Exception e){
-            Log.d("SQL",e.toString());
+            DefaultHttpClient httpclient = new DefaultHttpClient();
+            HttpPost httpost = new HttpPost("https://api.yyergg.info/sensor/");
+            json_csc.put("user_name", "William Su");
+            json_csc.put("type", "RPM");
+            json_csc.put("value", mBLEManager.RPM_amount.toString());
+            StringEntity se = new StringEntity(json_csc.toString());
+            httpost.setEntity(se);
+            //sets a request header so the page receving the request
+            //will know what to do with it
+            httpost.setHeader("Accept", "application/json");
+            httpost.setHeader("Content-type", "application/json");
+            ResponseHandler responseHandler = new BasicResponseHandler();
+            httpclient.execute(httpost, responseHandler);
+        } catch(Exception e){
+            Log.d("json",e.toString());
         }
+
+
+
+//        List<NameValuePair> params = new ArrayList<NameValuePair>();
+//        try {
+//            params.add(new BasicNameValuePair("username", "William Su"));
+//            params.add(new BasicNameValuePair("type", "heartrate"));
+//            params.add(new BasicNameValuePair("value", mBLEManager.HR_amount.toString()));
+//            httpRequest.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
+//            HttpResponse httpResponse = new DefaultHttpClient().execute(httpRequest);
+//            if (httpResponse.getStatusLine().getStatusCode() == 200) {
+//                String strResult = EntityUtils.toString(httpResponse.getEntity());
+//                Log.d("SQL",strResult);
+//            }
+//        }catch(Exception e){
+//            Log.d("SQL",e.toString());
+//        }
+
+
+//        HttpPost httpRequest2 = new HttpPost("http://52.196.218.0/chasewind_web/android.php");
+//        List<NameValuePair> params2 = new ArrayList<NameValuePair>();
+//        try {
+//            params2.add(new BasicNameValuePair("username", "William Su"));
+//            params2.add(new BasicNameValuePair("type", "RPM"));
+//            params2.add(new BasicNameValuePair("value", mBLEManager.RPM_amount.toString()));
+//            httpRequest.setEntity(new UrlEncodedFormEntity(params2, HTTP.UTF_8));
+//            HttpResponse httpResponse = new DefaultHttpClient().execute(httpRequest);
+//            if (httpResponse.getStatusLine().getStatusCode() == 200) {
+//                String strResult = EntityUtils.toString(httpResponse.getEntity());
+//                Log.d("SQL",strResult);
+//            }
+//        }catch(Exception e){
+//            Log.d("SQL",e.toString());
+//        }
     }
 }
